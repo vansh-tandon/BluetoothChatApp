@@ -4,10 +4,10 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.content.Context
-import android.content.Intent
+//import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
-import io.project.bluetoothchatapp.Manifest
+//import io.project.bluetoothchatapp.Manifest
 import io.project.bluetoothchatapp.data.FoundDeviceReceiver
 import io.project.bluetoothchatapp.data.toBluetoothDeviceDomain
 import io.project.bluetoothchatapp.domain.chat.BluetoothController
