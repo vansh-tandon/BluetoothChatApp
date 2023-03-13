@@ -1,8 +1,11 @@
 package io.project.bluetoothchatapp.data.chat
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothServerSocket
+import android.bluetooth.BluetoothSocket
 import android.content.Context
 //import android.content.Intent
 import android.content.IntentFilter
@@ -12,10 +15,9 @@ import io.project.bluetoothchatapp.data.FoundDeviceReceiver
 import io.project.bluetoothchatapp.data.toBluetoothDeviceDomain
 import io.project.bluetoothchatapp.domain.chat.BluetoothController
 import io.project.bluetoothchatapp.domain.chat.BluetoothDeviceDomain
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
+import java.io.IOException
+import java.util.*
 
 @SuppressLint("MissingPermission")
 class AndroidBluetoothController(private val context: Context): BluetoothController {
@@ -50,6 +52,10 @@ class AndroidBluetoothController(private val context: Context): BluetoothControl
             if(newDevice in devices) devices else devices+newDevice
         }
     }
+
+    private var currentServerSocket: BluetoothServerSocket? = null
+    private var currentClientSocket: BluetoothSocket? = null
+
     //to get the result we'll have to register the receiver first and we'll do that in start
     //discovery func
     init {
@@ -78,6 +84,52 @@ class AndroidBluetoothController(private val context: Context): BluetoothControl
         bluetoothAdapter?.cancelDiscovery()
     }
 
+    override fun startBluetoothServer(): Flow<ConnectionResult> {
+        return flow {
+            //it will emit a value and we'll be notified about that later on in our viewModel
+            if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)){
+                throw SecurityException("No BLUETOOTH_CONNECT permission")
+            }
+            //here we need to pass name of that bluetooth service that accepts connection and a uuid(unique identifier)
+            //both the devices should have sane uuid, so we want we using a random uuid, we have created a const hardcoded uuid.
+            currentServerSocket = bluetoothAdapter?.listenUsingInsecureRfcommWithServiceRecord("chat_service",
+                UUID.fromString(SERVICE_UUID))
+            //nxt step is to listen to another connection, now we want to block this background thread ala we r open to accept connection
+            var shouldLoop = true
+            while (shouldLoop){
+                currentClientSocket = try {
+                    //accept-> here it is a blocking action, it'll block the thread ala current server socket is active, it'll
+                    //be blocked until we call currentServerSocket?.close()
+                    //currentServerSocket?.accept()-> will return a Bluetooth socket, and this is now the socket from
+                    //the client that connected, as soon as we have a connected client this fun will return and loop will go on
+                    currentServerSocket?.accept()
+                }
+                catch(e: IOException){
+                    shouldLoop = false
+                    null
+                }
+                //if that exists
+                currentClientSocket?.let {
+                    currentServerSocket?.close()
+                }
+
+                //server socket is only for accepting connections
+                    //this client socket which we haven't closed, will be used to keep those connected instance
+                //this active connection will be able to always send data between our client and server
+            }
+        }
+    }
+    //we do care about the return value of this func which will be bluetooth server socket, we'll save it in public field
+    //for that we'll create currentServerSocket
+
+    override fun connectToDevice(device: BluetoothDeviceDomain): Flow<ConnectionResult> {
+        TODO("Not yet implemented")
+    }
+
+    override fun closeConnection() {
+        TODO("Not yet implemented")
+    }
+
     override fun release() {
         //to clear our bluetooth controller
         context.unregisterReceiver(foundDeviceReceiver)
@@ -102,6 +154,10 @@ class AndroidBluetoothController(private val context: Context): BluetoothControl
             }
     private fun hasPermission(permission: String): Boolean {
         return context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+    }
+
+    companion object{
+        const val SERVICE_UUID = "0000-1111-2222-0000"
     }
 
 

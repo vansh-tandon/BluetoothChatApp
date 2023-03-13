@@ -19,11 +19,11 @@ class FoundDeviceReceiver(private var onDeviceFound:(BluetoothDevice)-> Unit):Br
                 //to retrieve device info
                 val device = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     intent.getParcelableExtra(
-                        BluetoothDevice.EXTRA_NAME,
+                        BluetoothDevice.EXTRA_DEVICE,
                         BluetoothDevice::class.java
                     )
                 } else {
-                    intent.getParcelableExtra(BluetoothDevice.EXTRA_NAME)
+                    intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
                 }
                 //if device exists we called onDeviceFound
                 device?.let(onDeviceFound)

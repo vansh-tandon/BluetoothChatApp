@@ -23,6 +23,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 //import io.project.bluetoothchatapp.presentation.components.DeviceScreen
 //import io.project.bluetoothchatapp.ui.theme.BluetoothChatTheme
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.HiltAndroidApp
 import io.project.bluetoothchatapp.R
 import io.project.bluetoothchatapp.presentation.components.DeviceScreen
 import io.project.bluetoothchatapp.ui.theme.BluetoothChatTheme
