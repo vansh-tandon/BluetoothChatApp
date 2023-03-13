@@ -17,81 +17,86 @@ import androidx.compose.ui.unit.sp
 import io.project.bluetoothchatapp.domain.chat.BluetoothDevice
 import io.project.bluetoothchatapp.presentation.BluetoothUiState
 @Composable
-    fun DeviceScreen(
+fun DeviceScreen(
     state: BluetoothUiState,
     onStartScan: () -> Unit,
-    onStopScan: () -> Unit
+    onStopScan: () -> Unit,
+    onStartServer: () -> Unit,
+    onDeviceClick: (BluetoothDevice) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
     ) {
-        Column(
+        BluetoothDeviceList(
+            pairedDevices = state.pairedDevices,
+            scannedDevices = state.scannedDevices,
+            onClick = onDeviceClick,
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .weight(1f)
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceAround
         ) {
-            BluetoothDeviceList(
-                pairedDevices = state.pairedDevices,
-                scannedDevices = state.scannedDevices,
-                onClick = {},
+            Button(onClick = onStartScan) {
+                Text(text = "Start scan")
+            }
+            Button(onClick = onStopScan) {
+                Text(text = "Stop scan")
+            }
+            Button(onClick = onStartServer) {
+                Text(text = "Start server")
+            }
+        }
+    }
+}
+
+@Composable
+fun BluetoothDeviceList(
+    pairedDevices: List<BluetoothDevice>,
+    scannedDevices: List<BluetoothDevice>,
+    onClick: (BluetoothDevice) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier
+    ) {
+        item {
+            Text(
+                text = "Paired Devices",
+                fontWeight = FontWeight.Bold,
+                fontSize = 24.sp,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+        items(pairedDevices) { device ->
+            Text(
+                text = device.name ?: "(No name)",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
+                    .clickable { onClick(device) }
+                    .padding(16.dp)
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceAround
-            ) {
-                Button(onClick = onStartScan) {
-                    Text(text = "Start scan")
-                }
-                Button(onClick = onStopScan) {
-                    Text(text = "Stop scan")
-                }
-            }
+        }
+
+        item {
+            Text(
+                text = "Scanned Devices",
+                fontWeight = FontWeight.Bold,
+                fontSize = 24.sp,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+        items(scannedDevices) { device ->
+            Text(
+                text = device.name ?: "(No name)",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onClick(device) }
+                    .padding(16.dp)
+            )
         }
     }
-
-    @Composable
-    fun BluetoothDeviceList(
-        pairedDevices: List<BluetoothDevice>,
-        scannedDevices: List<BluetoothDevice>,
-        onClick: (BluetoothDevice) -> Unit,
-        modifier: Modifier = Modifier
-    ) {
-        LazyColumn(
-            modifier = modifier
-        ) {
-            item {
-                Text(
-                    text = "Paired Devices",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 24.sp,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-            items(pairedDevices) { device ->
-                Text(
-                    text = device.name ?: "(No name)",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onClick(device) }
-                        .padding(16.dp)
-                )
-            }
-
-            item {
-                Text(
-                    text = "Scanned Devices",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 24.sp,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-            items(scannedDevices) { device ->
-                Text(
-                    text = device.name ?: "(No name)",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onClick(device) }
-                        .padding(16.dp)
-                )
-            }
-        }
-    }
+}
