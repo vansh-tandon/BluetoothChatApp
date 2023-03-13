@@ -10,11 +10,13 @@ import android.content.Context
 //import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import io.project.bluetoothchatapp.data.BluetoothStateReceiver
 //import io.project.bluetoothchatapp.Manifest
 import io.project.bluetoothchatapp.data.FoundDeviceReceiver
 import io.project.bluetoothchatapp.data.toBluetoothDeviceDomain
 import io.project.bluetoothchatapp.domain.chat.BluetoothController
 import io.project.bluetoothchatapp.domain.chat.BluetoothDeviceDomain
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import java.io.IOException
 import java.util.*
@@ -30,6 +32,10 @@ class AndroidBluetoothController(private val context: Context): BluetoothControl
         bluetoothManager?.adapter
 
     }
+
+    private val _isConnected= MutableStateFlow<Boolean>(false)
+    override val isConnected: StateFlow<Boolean>
+        get() = _isConnected.asStateFlow()
 
     //we do this just to expose the immutable version
     //since another class should not be directly able to modify our stateflow in this class
@@ -51,6 +57,10 @@ class AndroidBluetoothController(private val context: Context): BluetoothControl
             val newDevice = device.toBluetoothDeviceDomain()
             if(newDevice in devices) devices else devices+newDevice
         }
+    }
+
+    private val bluetoothStateReceiver = BluetoothStateReceiver{
+        isConnected, bluetoothDevice ->
     }
 
     private var currentServerSocket: BluetoothServerSocket? = null
@@ -108,6 +118,7 @@ class AndroidBluetoothController(private val context: Context): BluetoothControl
                     shouldLoop = false
                     null
                 }
+                emit(ConnectionResult.ConnectionEstablished)
                 //if that exists
                 currentClientSocket?.let {
                     currentServerSocket?.close()
@@ -117,22 +128,53 @@ class AndroidBluetoothController(private val context: Context): BluetoothControl
                     //this client socket which we haven't closed, will be used to keep those connected instance
                 //this active connection will be able to always send data between our client and server
             }
-        }
+        }.onCompletion {
+            closeConnection()
+        }.flowOn(Dispatchers.IO)
     }
     //we do care about the return value of this func which will be bluetooth server socket, we'll save it in public field
     //for that we'll create currentServerSocket
 
     override fun connectToDevice(device: BluetoothDeviceDomain): Flow<ConnectionResult> {
-        TODO("Not yet implemented")
+        return flow {
+            if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)){
+                throw SecurityException("No BLUETOOTH_CONNECT permission")
+            }
+            //now we need to connect to the device we passed in the argument
+            currentClientSocket = bluetoothAdapter
+                ?.getRemoteDevice(device.address)
+                ?.createRfcommSocketToServiceRecord(UUID.fromString(SERVICE_UUID))
+            //now we have established a connection with our server
+            stopDiscovery()
+
+            currentClientSocket.let {socket ->
+                try {
+                    socket?.connect()
+                    emit(ConnectionResult.ConnectionEstablished)
+
+                }catch (e: IOException){
+                    socket?.close()
+                    currentClientSocket = null
+                    emit(ConnectionResult.Error("Connection was interrupted"))
+                }
+            }
+        }.onCompletion {
+            closeConnection()
+        }.flowOn(Dispatchers.IO)
     }
 
     override fun closeConnection() {
-        TODO("Not yet implemented")
+        currentClientSocket?.close()
+        currentServerSocket?.close()
+        currentClientSocket = null
+        currentServerSocket = null
     }
 
     override fun release() {
         //to clear our bluetooth controller
+        //to unregister our receiver
         context.unregisterReceiver(foundDeviceReceiver)
+        closeConnection()
     }
 
     //to get the list of paired devices
