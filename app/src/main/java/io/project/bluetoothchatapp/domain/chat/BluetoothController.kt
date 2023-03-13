@@ -1,6 +1,5 @@
 package io.project.bluetoothchatapp.domain.chat
 
-import io.project.bluetoothchatapp.data.chat.ConnectionResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,6 +27,8 @@ interface BluetoothController {
     //both these devices will receive the connection result(when the connection was established, when there
     //was an error, when there was a msg received from the other party and so on
     fun connectToDevice(device: BluetoothDevice): Flow<ConnectionResult>
+
+    suspend fun trySendMessage(message: String): BluetoothMessage?
 
     //when we want device to disconnect
     fun closeConnection()

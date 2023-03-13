@@ -3,11 +3,12 @@ package io.project.bluetoothchatapp.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.project.bluetoothchatapp.data.chat.ConnectionResult
+import io.project.bluetoothchatapp.domain.chat.ConnectionResult
 import io.project.bluetoothchatapp.domain.chat.BluetoothController
 import io.project.bluetoothchatapp.domain.chat.BluetoothDeviceDomain
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 //to interact with the bluetooth controller and then map the result
@@ -24,10 +25,11 @@ class BluetoothViewModel @Inject constructor(private val bluetoothController:Blu
         bluetoothController.pairedDevices,
         _state
     ){//either of these values changes, we'll get the new values here
-        scannedDevices, pairedDevices, state ->
+            scannedDevices, pairedDevices, state ->
         state.copy(
             scannedDevices = scannedDevices,
-            pairedDevices = pairedDevices
+            pairedDevices = pairedDevices,
+            messages = if(state.isConnected) state.messages else emptyList()
         )
             //stateIn-> converts this normal flow into stateflow
         //so it caches the latest value-> result of copy operation
@@ -70,6 +72,17 @@ class BluetoothViewModel @Inject constructor(private val bluetoothController:Blu
             .listen()
     }
 
+    fun sendMessage(message: String) {
+        viewModelScope.launch {
+            val bluetoothMessage = bluetoothController.trySendMessage(message)
+            if(bluetoothMessage != null) {
+                _state.update { it.copy(
+                    messages = it.messages + bluetoothMessage
+                ) }
+            }
+        }
+    }
+
     fun startScan(){
         bluetoothController.startDiscovery()
     }
@@ -85,6 +98,11 @@ class BluetoothViewModel @Inject constructor(private val bluetoothController:Blu
                         isConnected = true,
                         isConnecting = false,
                         errorMessage = null
+                    ) }
+                }
+                is ConnectionResult.TransferSucceeded -> {
+                    _state.update { it.copy(
+                        messages = it.messages + result.message
                     ) }
                 }
                 is ConnectionResult.Error -> {
