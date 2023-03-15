@@ -14,7 +14,8 @@ import javax.inject.Inject
 //to interact with the bluetooth controller and then map the result
 //to ui state
 @HiltViewModel
-class BluetoothViewModel @Inject constructor(private val bluetoothController:BluetoothController): ViewModel() {
+class BluetoothViewModel @Inject constructor(
+    private val bluetoothController:BluetoothController): ViewModel() {
 
     private val _state = MutableStateFlow(BluetoothUiState())
     //public exposed version of the state

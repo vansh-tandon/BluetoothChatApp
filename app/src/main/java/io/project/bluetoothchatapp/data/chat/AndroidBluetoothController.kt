@@ -115,7 +115,7 @@ class AndroidBluetoothController(private val context: Context): BluetoothControl
     }
 
     override fun stopDiscovery() {
-        if(!hasPermission(android.Manifest.permission.BLUETOOTH_SCAN)) return
+        if(!hasPermission(Manifest.permission.BLUETOOTH_SCAN)) return
         bluetoothAdapter?.cancelDiscovery()
     }
 
@@ -176,7 +176,7 @@ class AndroidBluetoothController(private val context: Context): BluetoothControl
                 throw SecurityException("No BLUETOOTH_CONNECT permission")
             }
 
-            val bluetoothDevice = bluetoothAdapter?.getRemoteDevice(device.address)
+//            val bluetoothDevice = bluetoothAdapter?.getRemoteDevice(device.address)
 
             //now we need to connect to the device we passed in the argument
             currentClientSocket = bluetoothAdapter
@@ -248,28 +248,25 @@ class AndroidBluetoothController(private val context: Context): BluetoothControl
     //to get the list of paired devices
     @SuppressLint("MissingPermission")
     private fun updatePairedDevices(){
-        if(!hasPermission(android.Manifest.permission.BLUETOOTH_CONNECT)) return
+        if(!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) return
 
         bluetoothAdapter
-                //bounded devices-> set of bluetooth devices not from android
+                //bounded devices-> set of bluetooth devices from android
             ?.bondedDevices
                 //map-> to map it to our own bt devices,
             // for that we use mapper(BluetoothDeviceMapper)
             ?.map {it.toBluetoothDeviceDomain()}
             ?.also {devices->
                 _pairedDevices.update { devices }
-
             }
-
             }
     private fun hasPermission(permission: String): Boolean {
         return context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
     }
 
     companion object{
-        const val SERVICE_UUID = "0000-1111-2222-0000"
+        const val SERVICE_UUID = "d8e62a7e-c33f-11ed-afa1-0242ac120002"
     }
-
 
 }
 
